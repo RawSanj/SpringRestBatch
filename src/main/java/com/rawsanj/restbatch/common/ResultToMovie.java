@@ -1,7 +1,7 @@
 package com.rawsanj.restbatch.common;
 
 
-import com.rawsanj.restbatch.jsontopojo.Movie;
+import com.rawsanj.restbatch.entity.Movie;
 import com.rawsanj.restbatch.jsontopojo.Result;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;

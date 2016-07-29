@@ -1,21 +1,30 @@
-package com.rawsanj.restbatch.jsontopojo;
+package com.rawsanj.restbatch.entity;
 
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Sanjay on 7/25/2016.
  */
+
+@Entity
 public class Movie {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long indexId;
 
     private String posterPath;
 
     private Boolean adult;
 
+    @Lob
     private String overview;
 
     private String releaseDate;
 
+    @Transient
     private List<Integer> genreIds = new ArrayList<Integer>();
 
     private Integer id;
@@ -51,6 +60,17 @@ public class Movie {
         this.voteCount = voteCount;
         this.video = video;
         this.voteAverage = voteAverage;
+    }
+
+    public Movie() {
+    }
+
+    public long getIndexId() {
+        return indexId;
+    }
+
+    public void setIndexId(long indexId) {
+        this.indexId = indexId;
     }
 
     public String getPosterPath() {

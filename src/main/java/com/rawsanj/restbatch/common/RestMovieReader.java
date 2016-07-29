@@ -1,19 +1,24 @@
 package com.rawsanj.restbatch.common;
 
+import com.rawsanj.restbatch.entity.Movie;
 import com.rawsanj.restbatch.jsontopojo.Movies;
+import com.rawsanj.restbatch.jsontopojo.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.EmptyStackException;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Created by Sanjay on 7/24/2016.
  */
-public class RestMovieReader implements ItemReader<Movies> {
+public class RestMovieReader implements ItemReader<Result> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestMovieReader.class);
 
@@ -23,7 +28,8 @@ public class RestMovieReader implements ItemReader<Movies> {
     private int nextPageNo;
     private int totalPages;
 
-    private Movies moviesData = null;
+    //Stack to store Movies fetched from REST API temporarily.
+    private static Stack<Result> resultSatck = new Stack<>();
 
     public RestMovieReader(String apiUrl, RestTemplate restTemplate) {
         this.apiUrl = apiUrl;
@@ -33,37 +39,38 @@ public class RestMovieReader implements ItemReader<Movies> {
     }
 
     @Override
-    public Movies read() throws Exception {
+    public Result read() throws Exception {
 
         LOGGER.info("Reading the information of the next page of Movies");
 
-        Movies nextMovies = null;
+        if (resultSatck.isEmpty()){          // Check If resultSatck is empty else pop Movie from stack and return it.
 
-        if (totalPages != 0){
-
-            nextMovies = fetchmoviesDataFromAPI();
-            nextPageNo++;
-            totalPages--;
-
-        }else {
-            return null;
+            if (totalPages != 0){           // Check if totalPage!=0 (i.e REST API has not reached the last page) continue else return null and complete the Job.
+                pushMoviesInStackFromAPI(); // Push results from REST API into resultSatck.
+                nextPageNo++;               // Increment nextPageNo for REST API page no.
+                totalPages--;               // Decrement totalPages to signal read() to stop the job and API reached last page.
+            }else {
+                return null;
+            }
         }
 
-        LOGGER.info("Found movies: {}", nextMovies);
+        Result nextResult = resultSatck.pop();
+        LOGGER.info("Found movie with Title: {}", nextResult.getTitle());
 
-        return nextMovies;
+        return nextResult;
     }
 
-    private Movies fetchmoviesDataFromAPI() {
+    private void pushMoviesInStackFromAPI() {
 
-        LOGGER.debug("Fetching Movies data from an external API by using the url: {}", apiUrl);
+        LOGGER.debug("Pushing Movies in Stack from an external API by using the url: {}", apiUrl);
 
-        Movies movies = restTemplate.getForObject(apiUrl+nextPageNo,
+        Movies moviesFromRestCall = restTemplate.getForObject(apiUrl+nextPageNo,
                 Movies.class);
         if (totalPages == -100){
-            this.totalPages = movies.getTotalPages();
+            this.totalPages = moviesFromRestCall.getTotalPages();
         }
 
-        return movies;
+        moviesFromRestCall.getResults().forEach(result -> resultSatck.push(result));
+
     }
 }

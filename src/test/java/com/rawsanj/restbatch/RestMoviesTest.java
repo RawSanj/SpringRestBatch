@@ -21,7 +21,7 @@ public class RestMoviesTest {
 	@Test
 	public void loadMoviesinMovies() {
 
-        final String url = "https://api.themoviedb.org/3/movie/top_rated?api_key=08b9b2257cdb93fc6a09e38654115b8b";
+        final String url = "https://api.themoviedb.org/3/movie/top_rated?api_key=YOUR_API_KEY";
 
 		Movies movies = restTemplate.getForObject(url,
 				Movies.class);

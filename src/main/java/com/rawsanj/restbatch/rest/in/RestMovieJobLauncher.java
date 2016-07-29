@@ -39,11 +39,11 @@ public class RestMovieJobLauncher {
 
     @Scheduled(cron = "50 * * * * *")
     void launchXmlFileToDatabaseJob() throws JobParametersInvalidException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException {
-        LOGGER.info("Starting restStudentJob job");
+        LOGGER.info("Starting restMovieJob job");
 
         jobLauncher.run(job, newExecution());
 
-        LOGGER.info("Stopping restStudentJob job");
+        LOGGER.info("Stopping restMovieJob job");
     }
 
     private JobParameters newExecution() {

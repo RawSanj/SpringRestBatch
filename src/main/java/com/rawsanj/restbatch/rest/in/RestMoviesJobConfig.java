@@ -3,8 +3,8 @@ package com.rawsanj.restbatch.rest.in;
 import com.rawsanj.restbatch.common.MoviesItemProcessor;
 import com.rawsanj.restbatch.common.MoviesItemWriter;
 import com.rawsanj.restbatch.common.RestMovieReader;
-import com.rawsanj.restbatch.jsontopojo.Movie;
-import com.rawsanj.restbatch.jsontopojo.Movies;
+import com.rawsanj.restbatch.entity.Movie;
+import com.rawsanj.restbatch.jsontopojo.Result;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -15,13 +15,10 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.List;
 
 /**
  * Created by Sanjay on 7/24/2016.
@@ -30,36 +27,31 @@ import java.util.List;
 @EnableBatchProcessing
 public class RestMoviesJobConfig {
 
+//    @Autowired
+//    private MovieRepository movieRepository;
+
     @Bean
-    ItemReader<Movies> restMovieReader(Environment env, RestTemplate restTemplate) {
+    ItemReader<Result> restMovieReader(Environment env, RestTemplate restTemplate) {
         return new RestMovieReader(env.getProperty("REST_API_URL_WITH_KEY"), restTemplate);
     }
 
     @Bean
-    ItemProcessor<Movies, Movies> moviesItemProcessor() {
+    ItemProcessor<Result, Movie> moviesItemProcessor() {
         return new MoviesItemProcessor();
     }
 
     @Bean
-    ItemWriter<Movies> moviesItemWriter() {
+    ItemWriter<Movie> moviesItemWriter() {
         return new MoviesItemWriter();
     }
-//    @Bean
-//    public JdbcBatchItemWriter<Result> writer() {
-//        JdbcBatchItemWriter<Result> writer = new JdbcBatchItemWriter<Result>();
-//        writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Result>());
-//        writer.setSql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)");
-//        writer.setDataSource(dataSource);
-//        return writer;
-//    }
 
     @Bean
-    Step restMovieStep(ItemReader<Movies> restMovieReader,
-                         ItemProcessor<Movies, Movies> moviesItemProcessor,
-                         ItemWriter<Movies> moviesItemWriter,
+    Step restMovieStep(ItemReader<Result> restMovieReader,
+                         ItemProcessor<Result, Movie> moviesItemProcessor,
+                         ItemWriter<Movie> moviesItemWriter,
                          StepBuilderFactory stepBuilderFactory) {
         return stepBuilderFactory.get("restMovieStep")
-                .<Movies, Movies>chunk(1)
+                .<Result, Movie>chunk(10)
                 .reader(restMovieReader)
                 .processor(moviesItemProcessor)
                 .writer(moviesItemWriter)
