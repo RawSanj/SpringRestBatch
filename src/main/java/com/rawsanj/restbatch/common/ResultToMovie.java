@@ -16,8 +16,8 @@ public class ResultToMovie implements Converter<Result, Movie> {
     public Movie convert(Result source) {
         Movie mov = new Movie(source.getPosterPath(), source.getAdult(),
                                 source.getOverview(), source.getReleaseDate(),
-                                source.getGenreIds(), source.getId(),
-                                source.getOriginalTitle(), source.getOriginalLanguage(),
+                                source.getId(), source.getOriginalTitle(),
+                                source.getOriginalLanguage(),
                                 source.getTitle(), source.getBackdropPath(),
                                 source.getPopularity(),source.getVoteCount(),
                                 source.getVideo(), source.getVoteAverage());

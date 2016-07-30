@@ -13,7 +13,7 @@ public class Movie {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long indexId;
+    private long uId;
 
     private String posterPath;
 
@@ -23,9 +23,6 @@ public class Movie {
     private String overview;
 
     private String releaseDate;
-
-    @Transient
-    private List<Integer> genreIds = new ArrayList<Integer>();
 
     private Integer id;
 
@@ -45,12 +42,11 @@ public class Movie {
 
     private Integer voteAverage;
 
-    public Movie(String posterPath, Boolean adult, String overview, String releaseDate, List<Integer> genreIds, Integer id, String originalTitle, String originalLanguage, String title, String backdropPath, Double popularity, Integer voteCount, Boolean video, Integer voteAverage) {
+    public Movie(String posterPath, Boolean adult, String overview, String releaseDate, Integer id, String originalTitle, String originalLanguage, String title, String backdropPath, Double popularity, Integer voteCount, Boolean video, Integer voteAverage) {
         this.posterPath = posterPath;
         this.adult = adult;
         this.overview = overview;
         this.releaseDate = releaseDate;
-        this.genreIds = genreIds;
         this.id = id;
         this.originalTitle = originalTitle;
         this.originalLanguage = originalLanguage;
@@ -65,12 +61,12 @@ public class Movie {
     public Movie() {
     }
 
-    public long getIndexId() {
-        return indexId;
+    public long getuId() {
+        return uId;
     }
 
-    public void setIndexId(long indexId) {
-        this.indexId = indexId;
+    public void setuId(long uId) {
+        this.uId = uId;
     }
 
     public String getPosterPath() {
@@ -103,14 +99,6 @@ public class Movie {
 
     public void setReleaseDate(String releaseDate) {
         this.releaseDate = releaseDate;
-    }
-
-    public List<Integer> getGenreIds() {
-        return genreIds;
-    }
-
-    public void setGenreIds(List<Integer> genreIds) {
-        this.genreIds = genreIds;
     }
 
     public Integer getId() {
@@ -192,7 +180,6 @@ public class Movie {
                 ", adult=" + adult +
                 ", overview='" + overview + '\'' +
                 ", releaseDate='" + releaseDate + '\'' +
-                ", genreIds=" + genreIds +
                 ", id=" + id +
                 ", originalTitle='" + originalTitle + '\'' +
                 ", originalLanguage='" + originalLanguage + '\'' +
