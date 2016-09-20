@@ -1,18 +1,13 @@
 package com.rawsanj.restbatch.common;
 
-import com.rawsanj.restbatch.entity.Movie;
 import com.rawsanj.restbatch.jsontopojo.Movies;
 import com.rawsanj.restbatch.jsontopojo.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.EmptyStackException;
-import java.util.List;
 import java.util.Stack;
 
 /**
@@ -57,20 +52,34 @@ public class RestMovieReader implements ItemReader<Result> {
         Result nextResult = resultSatck.pop();
         LOGGER.info("Found movie with Title: {}", nextResult.getTitle());
 
+        Thread.sleep(100); // Add sleep to avoid API Rate Limit Lock
+
         return nextResult;
     }
 
-    private void pushMoviesInStackFromAPI() {
+    private void pushMoviesInStackFromAPI() throws InterruptedException {
 
         LOGGER.debug("Pushing Movies in Stack from an external API by using the url: {}", apiUrl);
 
-        Movies moviesFromRestCall = restTemplate.getForObject(apiUrl+nextPageNo,
+//        Movies moviesFromRestCall = restTemplate.getForObject(apiUrl+nextPageNo,
+//                Movies.class);
+
+        ResponseEntity<Movies> response = restTemplate.getForEntity(apiUrl+nextPageNo,
                 Movies.class);
         if (totalPages == -100){
-            this.totalPages = moviesFromRestCall.getTotalPages();
+            this.totalPages = response.getBody().getTotalPages();
+            LOGGER.info("Total No. of Movies is {}. Total Pages: {}", response.getBody().getTotalResults(), response.getBody().getTotalPages());
+//            LOGGER.info("HEADER INFO: {}. Status Code: {}", response.getHeaders(), response.getStatusCode());
+//            LOGGER.info("HEADER INFO: {}. Status Code: {}", response.getHeaders().get("X-RateLimit-Limit"));
+
+            if (Integer.parseInt(response.getHeaders().get("X-RateLimit-Remaining").get(0))==1){
+                Thread.sleep(60_000);
+                LOGGER.info("HEADER INFO: {}.", response.getHeaders().get("X-RateLimit-Limit"));
+                LOGGER.info("********************************************Sleeping for 1 MINUTE********************************************");
+            }
         }
 
-        moviesFromRestCall.getResults().forEach(result -> resultSatck.push(result));
+        response.getBody().getResults().forEach(result -> resultSatck.push(result));
 
     }
 }

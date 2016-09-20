@@ -1,6 +1,6 @@
 package com.rawsanj.restbatch.common;
 
-import com.rawsanj.restbatch.entity.Movie;
+import com.rawsanj.restbatch.domain.Movie;
 import com.rawsanj.restbatch.jsontopojo.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +17,14 @@ public class MoviesItemProcessor implements ItemProcessor<Result, Movie> {
     @Autowired
     private ResultToMovie resultToMovie;
 
+    private static int movieNo = 1;
+
     @Override
     public Movie process(Result result) throws Exception {
 
-        LOGGER.info("Converting Result to Movie");
+        LOGGER.info("Converting Result to Movie. Number# {}",movieNo);
+        movieNo++;
+
         Movie movie = resultToMovie.convert(result);
         return movie;
 

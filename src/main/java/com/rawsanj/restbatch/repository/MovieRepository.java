@@ -1,6 +1,6 @@
 package com.rawsanj.restbatch.repository;
 
-import com.rawsanj.restbatch.entity.Movie;
+import com.rawsanj.restbatch.domain.Movie;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
