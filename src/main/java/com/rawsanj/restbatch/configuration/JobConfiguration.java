@@ -1,36 +1,36 @@
-package com.rawsanj.restbatch.rest.in;
+package com.rawsanj.restbatch.configuration;
 
 import com.rawsanj.restbatch.common.JobCompletionNotificationListener;
 import com.rawsanj.restbatch.common.MoviesItemProcessor;
-import com.rawsanj.restbatch.common.MoviesItemWriter;
 import com.rawsanj.restbatch.common.RestMovieReader;
-import com.rawsanj.restbatch.entity.Movie;
+import com.rawsanj.restbatch.domain.Movie;
 import com.rawsanj.restbatch.jsontopojo.Result;
 import com.rawsanj.restbatch.repository.MovieRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Created by Sanjay on 7/24/2016.
+ * Created by Sanjay on 9/21/2016.
  */
 @Configuration
-@EnableBatchProcessing
-public class RestMoviesJobConfig {
+public class JobConfiguration {
+
+    @Autowired
+    private JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    private StepBuilderFactory stepBuilderFactory;
 
     @Autowired
     private MovieRepository movieRepository;
@@ -45,11 +45,6 @@ public class RestMoviesJobConfig {
         return new MoviesItemProcessor();
     }
 
-//    @Bean
-//    ItemWriter<Movie> moviesItemWriter() {
-//        return new MoviesItemWriter();
-//    }
-
     @Bean
     RepositoryItemWriter<Movie> movieRepositoryItemWriter(){
 
@@ -61,11 +56,15 @@ public class RestMoviesJobConfig {
     }
 
     @Bean
-    Step restMovieStep(ItemReader<Result> restMovieReader,
-                         ItemProcessor<Result, Movie> moviesItemProcessor,
-                       RepositoryItemWriter<Movie> movieRepositoryItemWriter,
-                         StepBuilderFactory stepBuilderFactory) {
-        return stepBuilderFactory.get("restMovieStep")
+    public JobExecutionListener listener() {
+        return new JobCompletionNotificationListener();
+    }
+
+    @Bean
+    public Step step1(ItemReader<Result> restMovieReader,
+                        ItemProcessor<Result, Movie> moviesItemProcessor,
+                        RepositoryItemWriter<Movie> movieRepositoryItemWriter) throws Exception {
+        return stepBuilderFactory.get("step1")
                 .<Result, Movie>chunk(10)
                 .reader(restMovieReader)
                 .processor(moviesItemProcessor)
@@ -74,19 +73,12 @@ public class RestMoviesJobConfig {
     }
 
     @Bean
-    public JobExecutionListener listener() {
-        return new JobCompletionNotificationListener();
-    }
-
-    @Bean
-    Job restMovieJob(JobBuilderFactory jobBuilderFactory,
-                       @Qualifier("restMovieStep") Step restMovieStep) {
-        return jobBuilderFactory.get("restMovieJob")
-                .incrementer(new RunIdIncrementer())
+    public Job job(Step step1) throws Exception {
+        return jobBuilderFactory.get("job")
+                .start(step1)
                 .listener(listener())
-                .flow(restMovieStep)
-                .end()
                 .build();
     }
+
 
 }

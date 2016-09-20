@@ -1,8 +1,6 @@
-package com.rawsanj.restbatch.entity;
+package com.rawsanj.restbatch.domain;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Sanjay on 7/25/2016.

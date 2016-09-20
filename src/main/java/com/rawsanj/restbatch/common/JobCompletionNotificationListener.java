@@ -1,16 +1,11 @@
 package com.rawsanj.restbatch.common;
 
-import com.rawsanj.restbatch.entity.Movie;
 import com.rawsanj.restbatch.repository.MovieRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by Sanjay on 7/30/2016.
@@ -33,10 +28,19 @@ public class JobCompletionNotificationListener implements JobExecutionListener {
 
         LOGGER.info("RUNNING JobCompletion Check.");
 
-        List<Movie> moviesInDB = new ArrayList<>();
-        movieRepository.findAll().forEach(moviesInDB::add);
+        long cnt = movieRepository.count();
 
-        LOGGER.info("Movies stored in Database: {}", moviesInDB.size());
-        moviesInDB.forEach(movie -> LOGGER.info("Title - {}. Release Data - {}. Language - {}", movie.getTitle(), movie.getReleaseDate(), movie.getOriginalLanguage()));
-    }
+        LOGGER.info("Total Movies Saved: {}", cnt);
+
+//        Shutdown when Job is Finished (for Windows PC)
+//        Runtime runtime = Runtime.getRuntime();
+//        String command = "shutdown /s";
+//        try {
+//            Process proc = runtime.exec(command);
+//        } catch (IOException e) {
+//            System.out.println(e.getMessage());
+//            e.printStackTrace();
+//        }
+
+     }
 }
