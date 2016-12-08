@@ -43,18 +43,18 @@ public class RestMoviesTest {
         System.out.println("Total No of Pages: "+ movies.getTotalPages());
         assertThat(movies.getPage()).isEqualTo(1);
 
-//        List<Movies> allMovies = new ArrayList<>();
-//
-//        for (int i=1; i<=movies.getTotalPages();i++){
-//
-//            Movies m = restTemplate.getForObject(url+"&page="+i, Movies.class);
-//            allMovies.add(m);
-//
-//        }
-//
-//        allMovies.forEach(movPage -> {
-//            movies.getResults().forEach(mov -> System.out.println(mov.getTitle()));
-//        });
+        List<Movies> allMovies = new ArrayList<>();
+
+        for (int i=1; i<=movies.getTotalPages();i++){
+
+            Movies m = restTemplate.getForObject(url+"&page="+i, Movies.class);
+            allMovies.add(m);
+
+        }
+
+        allMovies.forEach(movPage -> {
+            movies.getResults().forEach(mov -> System.out.println(mov.getTitle()));
+        });
     }
 
     @Test

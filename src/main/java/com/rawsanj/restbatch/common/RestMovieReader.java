@@ -5,6 +5,7 @@ import com.rawsanj.restbatch.jsontopojo.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,6 +23,7 @@ public class RestMovieReader implements ItemReader<Result> {
 
     private int nextPageNo;
     private int totalPages;
+    private int releaseYear;
 
     //Stack to store Movies fetched from REST API temporarily.
     private static Stack<Result> resultSatck = new Stack<>();
@@ -30,56 +32,90 @@ public class RestMovieReader implements ItemReader<Result> {
         this.apiUrl = apiUrl;
         this.restTemplate = restTemplate;
         this.nextPageNo = 1;
-        this.totalPages = -100; //Set to -100 as flag to starting point. USe this to Set the totalPages from Rest call only once.
+        this.releaseYear = 0;
+        this.totalPages = Integer.MAX_VALUE; //Set to Integer.MAX_VALUE as flag to starting point. Use this to Set the totalPages from Rest call for each YEAR.
     }
 
     @Override
-    public Result read() throws Exception {
+    public Result read()  {
 
-        LOGGER.info("Reading the information of the next page of Movies");
+        readFromRestAPI();
 
-        if (resultSatck.isEmpty()){          // Check If resultSatck is empty else pop Movie from stack and return it.
-
-            if (totalPages != 0){           // Check if totalPage!=0 (i.e REST API has not reached the last page) continue else return null and complete the Job.
-                pushMoviesInStackFromAPI(); // Push results from REST API into resultSatck.
-                nextPageNo++;               // Increment nextPageNo for REST API page no.
-                totalPages--;               // Decrement totalPages to signal read() to stop the job and API reached last page.
-            }else {
-                return null;
-            }
+        Result nextResult = null;
+        if (!resultSatck.isEmpty()){
+            nextResult = resultSatck.pop();
+            LOGGER.info("Found movie with Title: {}", nextResult.getTitle());
         }
-
-        Result nextResult = resultSatck.pop();
-        LOGGER.info("Found movie with Title: {}", nextResult.getTitle());
-
-        Thread.sleep(100); // Add sleep to avoid API Rate Limit Lock
 
         return nextResult;
     }
 
-    private void pushMoviesInStackFromAPI() throws InterruptedException {
+    private void readFromRestAPI(){
 
-        LOGGER.debug("Pushing Movies in Stack from an external API by using the url: {}", apiUrl);
+        LOGGER.info("Reading the information with params=> nextPageNo: {}. releaseYear: {}. totalPages: {}", nextPageNo,releaseYear, totalPages);
 
-//        Movies moviesFromRestCall = restTemplate.getForObject(apiUrl+nextPageNo,
-//                Movies.class);
+        if (resultSatck.isEmpty()){                         // If resultSatck is empty, push Movies into resultSatck via REST call.
 
-        ResponseEntity<Movies> response = restTemplate.getForEntity(apiUrl+nextPageNo,
-                Movies.class);
-        if (totalPages == -100){
-            this.totalPages = response.getBody().getTotalPages();
-            LOGGER.info("Total No. of Movies is {}. Total Pages: {}", response.getBody().getTotalResults(), response.getBody().getTotalPages());
-//            LOGGER.info("HEADER INFO: {}. Status Code: {}", response.getHeaders(), response.getStatusCode());
-//            LOGGER.info("HEADER INFO: {}. Status Code: {}", response.getHeaders().get("X-RateLimit-Limit"));
+            if (releaseYear==0){                            // On init i.e. when releaseYear=0, set releaseYear=Lowest_Year from Rest Call from Movie DB.
+                releaseYear = MoviesDates.LOWEST_YEAR;
+            }
 
-            if (Integer.parseInt(response.getHeaders().get("X-RateLimit-Remaining").get(0))==1){
-                Thread.sleep(60_000);
-                LOGGER.info("HEADER INFO: {}.", response.getHeaders().get("X-RateLimit-Limit"));
-                LOGGER.info("********************************************Sleeping for 1 MINUTE********************************************");
+            if (releaseYear <= MoviesDates.HIGHEST_YEAR){    // Execute this block only if releaseYear is less between LOWEST_YEAR and HIGHEST_YEAR.
+                if (nextPageNo>=totalPages){                 // Check if nextPageNo>=totalPages (i.e REST API for current releaseYear has not reached the last page). If nextPageNo>=totalPages reset params for Next Year.
+                    resetReadParamsForNextYear();
+                }
+                if (nextPageNo <=totalPages){               // If nextPageNo <=totalPages, Push results from REST API into resultSatck.
+                    pushMoviesInStackFromAPI();
+                }
+                nextPageNo++;                               // Increment nextPageNo for REST API page no.
             }
         }
 
-        response.getBody().getResults().forEach(result -> resultSatck.push(result));
+    }
+
+    // Reset ReadParams : Increment releaseYear, reset nextPageNo=1 and totalPages=Max_Value.
+    private void resetReadParamsForNextYear(){
+        LOGGER.info("Reseting Read Params For Year: {}.", releaseYear+1);
+        releaseYear++;
+        nextPageNo=1;
+        totalPages=Integer.MAX_VALUE;
+    }
+
+    private void pushMoviesInStackFromAPI() {
+
+        LOGGER.info("****************************************************************************");
+        LOGGER.info("URL: {}. Page No: {}. Total Page: {}. For Year {}", apiUrl+ "&primary_release_year="+releaseYear+"&page="+ nextPageNo, nextPageNo, totalPages, releaseYear);
+        LOGGER.info("****************************************************************************");
+
+        ResponseEntity<Movies> response = restTemplate.getForEntity(apiUrl+ "&primary_release_year="+releaseYear+"&page="+ nextPageNo,
+                Movies.class);
+
+        if (totalPages == Integer.MAX_VALUE){
+            this.totalPages = response.getBody().getTotalPages();
+            LOGGER.info("Total No. of Movies is {}. Total Pages: {}", response.getBody().getTotalResults(), response.getBody().getTotalPages());
+        }
+
+        if (Integer.parseInt(response.getHeaders().get("X-RateLimit-Remaining").get(0))<5){
+            LOGGER.info("HEADER INFO: {}.", response.getHeaders().get("X-RateLimit-Limit"));
+            LOGGER.info("********************************************Sleeping for 1 MINUTE********************************************");
+            try {
+                Thread.sleep(60_000);
+            }catch (InterruptedException e){
+                e.printStackTrace();
+            }
+        }
+
+        // Check if response has Movies i.e. there are Movies released in X years and push movies in resultSatck.
+        // If response is empty i.e. No Movie data for X Year then call readFromRestAPI() to continue for next Year.
+        if (response.getBody().getTotalResults()!=0){
+            response.getBody().getResults().forEach(result -> resultSatck.push(result));
+        }else {
+            readFromRestAPI();
+        }
+
+//        LOGGER.info("All HEADERS INFO: ");
+//        HttpHeaders headers = response.getHeaders();
+//        headers.forEach((key, value)->  LOGGER.info("Key: {}. Value: {}", key, value.toString()) );
 
     }
 }

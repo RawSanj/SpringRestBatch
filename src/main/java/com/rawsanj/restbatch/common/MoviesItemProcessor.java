@@ -22,7 +22,7 @@ public class MoviesItemProcessor implements ItemProcessor<Result, Movie> {
     @Override
     public Movie process(Result result) throws Exception {
 
-        LOGGER.info("Converting Result to Movie. Number# {}",movieNo);
+        //LOGGER.info("Converting Result to Movie. Number# {}",movieNo);
         movieNo++;
 
         Movie movie = resultToMovie.convert(result);
